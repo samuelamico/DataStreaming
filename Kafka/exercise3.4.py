@@ -99,7 +99,7 @@ async def consume(topic_name):
     #
     # TODO: Create a CachedSchemaRegistryClient
     #
-    #schema_registry = CachedSchemaRegistryClient(SCHEMA_REGISTRY_URL)
+    schema_registry = CachedSchemaRegistryClient(SCHEMA_REGISTRY_URL)
 
     #
     # TODO: Use the Avro Consumer
