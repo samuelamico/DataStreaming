@@ -1,34 +1,42 @@
 
-from pyspark.sql import SparkSession, Row
-from pyspark.sql.types import *
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import rand, expr
 
 
-def create_spark_session():
-    """
-    Create SparkSession
-    :return:
-    """
+def join_exercise():
 
     spark = SparkSession.builder \
-        .master("local[2]") \
-        .appName("Schema example") \
-        .getOrCreate()
+            .master("local[2]") \
+            .appName("join and watermark exercise") \
+            .getOrCreate()
+    #setting shuffle partition to 1
+    spark.conf.set("spark.sql.shuffle.partitions", "1")
 
-    # TODO build schema for below rows
-    schema = StructType([StructField('name', StringType()),
-                         StructField('age', IntegerType()),
-                         StructField('address', StringType()),
-                         StructField('phone_number', StringType())])
+    #TODO create a streaming dataframe using format('rate')
+    #TODO select expressions value and timestamp
+    left = spark.readStream\
+        .format("rate") \
+        .option("rowsPerSecond", "5") \
+        .option("numPartitions", "1").load() \
+        .selectExpr("value AS row_id", "timestamp AS left_timestamp")
+#        .writeStream.outputMode("append").format("console").start().awaitTermination()
+    # enable writeStream line above to just run it on console and test
 
-    rows = [Row(name='Jake', age=33, address='123 Main Street', phone_number='111-222-3333'),
-            Row(name='John', age=48, address='872 Pike Street', phone_number='8972341253')]
+    #TODO create a streaming dataframe that we'll join on
+    right = spark.readStream \
+        .format("rate")\
+        .option("rowsPerSecond", "5")\
+        .option("numPartitions", "1").load()\
+        .where((rand() * 100).cast("integer") < 10) \
+        .selectExpr("(value - 50) AS row_id ", "timestamp AS right_timestamp") \
+        .where("row_id > 0")
 
-    # TODO create dataframe using the rows and schema
-    df = spark.createDataFrame(rows, schema)
+    #TODO join using row_id
+    join_query = left.join(right, "row_id")
 
-    # check if schema is created correctly
-    df.printSchema()
+    join_query.writeStream.outputMode("append").format("console").start().awaitTermination()
 
+    print(query)
 
 if __name__ == "__main__":
-    create_spark_session()
+    join_exercise()

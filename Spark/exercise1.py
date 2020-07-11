@@ -1,35 +1,46 @@
+import pathlib
 
 from pyspark.sql import SparkSession
 import pyspark.sql.functions as psf
-import pathlib
 
+CITIES_CSV = './resources/lesson1/csv/cities.csv'
+LINES_CSV = './resources/lesson1/csv/lines.csv'
+TRACKS_CSV = './resources/lesson1/csv/tracks.csv'
 
-def explore_data():
-    # TODO build a spark session (SparkSession is already imported for you!)
-    spark = SparkSession.builder.appName("cities").getOrCreate()
+def transformation_exercise():
+    """
+    Do an exploration on World Transit System
+    Q1: How many tracks are still in operation?
+    Q2: What are the names of tracks that are still in operation?
+    :return:
+    """
+    spark = SparkSession.builder \
+        .master("local") \
+        .appName("transformation exercise") \
+        .getOrCreate()
 
-    # TODO set correct path for file_path using Pathlib
-    # TODO use a correct operator to load a csv file
-    file_path = './resources/lesson1/csv/cities.csv'
-    df = spark.read.csv(file_path, header=True)
+    # TODO import all the necessary files - the dataframe name should match the CSV files,
+    # like cities_df should be corresponding to CITIES_CSV, and so on.
+    cities_df = spark.read.csv(CITIES_CSV)
+    lines_df =  spark.read.csv(LINES_CSV)
+    tracks_df = spark.read.csv(TRACKS_CSV)
 
-    # view schema
-    df.printSchema()
+    # TODO the names of the columns are confusing (two id columns, but they're not matching)
+    # TODO how do we solve this problem?
+    lines_df = lines_df.withColumnRenamed("name", "city_name").select("city_id", "city_name")
+    left_df = cities_df.join(lines_df, cities_df.id == lines_df.city_id, "inner")
 
-    # TODO create another dataframe, drop null columns for start_year
-    # TODO select start_year and country only and get distinct values
-    # TODO sort by start_year ascending
+    # TODO how do you know which track is still operating?
+    tracks_df.select(psf.max("closure")).distinct().show()
 
-    distinct_df = df.na.drop(subset=['start_year']) \
-        .select("start_year", "country") \
-        .distinct() \
-        .sort(psf.col("start_year").asc())
+    # TODO filter on only the operating tracks
+    filtered_df = tracks_df.filter(" ")
 
-    # show distinct values
-    distinct_df.show()
+    joined_df = left_df.join(filtered_df, left_df.city_id == filtered_df.city_id, "inner")
 
-    # which country had the metro system the earliest?
-
+    # TODO Q1 and Q2 answers
+    joined_df.select("city_name").distinct().count()
+    joined_df.select("city_name").distinct().show(40)
 
 if __name__ == "__main__":
-    explore_data()
+    transformation_exercise()

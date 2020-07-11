@@ -1,64 +1,25 @@
-# Please complete the TODO items below
-
-from pyspark.sql import SparkSession
-from pyspark.sql.functions import *
-from pyspark.sql.types import *
-import pathlib
+from pyspark import SparkConf, SparkContext
 
 
-def run_spark_streaming():
+def action_exercise():
     """
-    In this lesson, we're going to import a static json file first to explore the data
-    Then load that static data as streaming data
-    and show in our terminal
+    simple action exercise
     :return:
     """
-    spark = SparkSession.builder \
-            .master("local") \
-            .appName("spark streaming example") \
-            .getOrCreate()
+    # TODO create spark conf
+    conf = SparkConf().setMaster("local[2]").setAppName("RDD Example")
 
+    # TODO create a spark context
+    sc = SparkContext(conf=conf)
 
-    # read the data file
-    file_path = './resources/lesson1/json/data.txt'
-    df = spark.read.json(file_path)
+    # TODO create a simple rdd, parallelize a list of numbers
+    df = sc.parallelize([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 
-    df.show(10, False)
-
-    # TODO based on the df.show, build schema
-    jsonSchema = StructType([StructField("status", StringType(), True),
-                             StructField("timestamp", TimestampType(), True)])
-
-    # TODO create streamning input dataframe that reads the same dataset, with jsonSchema you created
-    streamingInputDF = (
-        spark
-            .readStream
-            .schema(jsonSchema)  # Set the schema of the JSON data
-            .option("maxFilesPerTrigger", 1)  # Treat a sequence of files as a stream by picking one file at a time
-            .json(file_path)
+    # TODO create a lambda function to get sum of all numbers in the list
+    df.reduce(
+        lambda x,y: x+y 
     )
 
-
-    # This will be given
-    streamingCountsDF = (
-        streamingInputDF
-            .groupBy(
-            streamingInputDF.status,
-            window(streamingInputDF.timestamp, "1 hour"))
-            .count()
-    )
-
-    streamingCountsDF.isStreaming
-
-    # TODO Write query output to console
-    query = (
-        streamingCountsDF
-            .writeStream
-            .format("console")  # memory = store in-memory table (for testing only in Spark 2.0)
-            .queryName("counts")  # counts = name of the in-memory table
-            .outputMode("complete")  # complete = all the counts should be in the table
-            .start()
-    )
 
 if __name__ == "__main__":
-    run_spark_streaming()
+    action_exercise()
